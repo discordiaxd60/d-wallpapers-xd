@@ -26,13 +26,17 @@ jobs:
 
       - name: Build .deb package and APT Repo
         run: |
-          mkdir -p public/pool/main
+          # 1. Crea la struttura della cartella temporanea per il pacchetto
           mkdir -p build_pkg/DEBIAN
           mkdir -p build_pkg/usr/share/wallpapers/dlinesos
+
+          # 2. Copia i file degli sfondi si la cartella esiste
 
           if [ -d "src-wallpapers" ]; then
             cp -r src-wallpapers/* build_pkg/usr/share/wallpapers/dlinesos/ 2>/dev/null || true
           fi
+
+          # 3. Crea il file control obbligatorio per Debian
 
           cat <<EOF > build_pkg/DEBIAN/control
           Package: dlinesos-wallpapers
@@ -44,12 +48,23 @@ jobs:
           Description: Sfondi ufficiali per D-LinesOS-XD
           EOF
 
+          # 4. Compila il pacchetto .deb
           dpkg-deb --build build_pkg dlinesos-wallpapers.deb
+
+          # 5. Crea la struttura finale del repository APT nella cartella public
+          mkdir -p public/pool/main
+
           mv dlinesos-wallpapers.deb public/pool/main/
 
+          # 6. Genera l'indice dei pacchetti (usando /dev/null come override)
           cd public
           dpkg-scanpackages pool/main /dev/null > Packages
           gzip -k -f Packages
+          cd ..
+
+          # Mostra il contenuto della cartella public per debug nei log
+          ls -la public/
+          ls -la public/pool/main/
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
