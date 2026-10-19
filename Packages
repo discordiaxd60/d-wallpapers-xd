@@ -1,12 +1,12 @@
 Package: dlinesos-wallpapers
-Version: 1.0.1
+Version: 1.0.2
 Architecture: all
 Maintainer: D-Brand Team
 Filename: pool/main/dlinesos-wallpapers.deb
-Size: 43793950
-MD5sum: af356b0f3597e5d803c51d1a8f3b612e
-SHA1: 2fc09f389fde03a990b57504e64224199caf9096
-SHA256: 186ac8eeab3824c122e4547132ba6dd78e6d89a9c14d78b41887f44fab581284
+Size: 43793938
+MD5sum: 3fa737a8458ab23a74e2935af1c8f6ac
+SHA1: 4cd61e1b1a7a30fb8a39b44d89a2db106cc56408
+SHA256: 714616b045314107f25a5defafce1c194e58e06b098bd33fb61117362d115fe7
 Section: graphics
 Priority: optional
 Description: Sfondi ufficiali per D-LinesOS-XD
