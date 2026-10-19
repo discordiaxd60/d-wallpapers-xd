@@ -1,0 +1,1 @@
+So, this is the wallpaper repository for D-LinesOS-XD. Basically, whenever I add a new wallpaper, it should automatically download into the system via the `sudo apt update && sudo apt install` command—if it works, that is. You’re welcome to grab these wallpapers for your own devices, but please don’t republish them; otherwise, people end up blaming me.
