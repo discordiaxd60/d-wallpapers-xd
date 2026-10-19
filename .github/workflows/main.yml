@@ -15,17 +15,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
       - name: Build .deb package and APT Repo
         run: |
-          mkdir -p pkg/DEBIAN
-          mkdir -p pkg/usr/share/wallpapers/dlinesos
+          # 1. Crea la struttura della cartella temporanea per il pacchetto
+          mkdir -p build_pkg/DEBIAN
+          mkdir -p build_pkg/usr/share/wallpapers/dlinesos
 
-          # Copia i file delle immagini e i metadati
-          cp -r src-wallpapers/* pkg/usr/share/wallpapers/dlinesos/
-          mv pkg/usr/share/wallpapers/dlinesos/metadata.desktop pkg/usr/share/wallpapers/dlinesos/metadata.desktop 2>/dev/null || true
+          # 2. Copia i file degli sfondi se la cartella esiste
+          if [ -d "src-wallpapers" ]; then
+            cp -r src-wallpapers/* build_pkg/usr/share/wallpapers/dlinesos/ 2>/dev/null || true
+          fi
 
-          # Genera il file control
-          cat <<EOF > pkg/DEBIAN/control
+          # 3. Crea il file control obbligatorio per Debian
+          cat <<EOF > build_pkg/DEBIAN/control
           Package: dlinesos-wallpapers
           Version: 1.0.${{ github.run_number }}
           Section: graphics
@@ -35,16 +40,22 @@ jobs:
           Description: Sfondi ufficiali per D-LinesOS-XD
           EOF
 
-          # Compila il pacchetto .deb
-          dpkg-deb --build pkg dlinesos-wallpapers.deb
+          # 4. Compila il pacchetto .deb
+          dpkg-deb --build build_pkg dlinesos-wallpapers.deb
 
-          # Prepara la struttura del repository APT
+          # 5. Crea la struttura finale del repository APT nella cartella public
           mkdir -p public/pool/main
           mv dlinesos-wallpapers.deb public/pool/main/
 
+          # 6. Genera l'indice dei pacchetti (usando /dev/null come override)
           cd public
           dpkg-scanpackages pool/main /dev/null > Packages
           gzip -k -f Packages
+          cd ..
+
+          # Mostra il contenuto della cartella public per debug nei log
+          ls -la public/
+          ls -la public/pool/main/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
