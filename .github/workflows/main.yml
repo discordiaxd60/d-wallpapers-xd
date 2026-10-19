@@ -1,0 +1,53 @@
+name: Build APT Repository
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build .deb package and APT Repo
+        run: |
+          mkdir -p pkg/DEBIAN
+          mkdir -p pkg/usr/share/wallpapers/dlinesos
+
+          # Copia i file delle immagini e i metadati
+          cp -r src-wallpapers/* pkg/usr/share/wallpapers/dlinesos/
+          mv pkg/usr/share/wallpapers/dlinesos/metadata.desktop pkg/usr/share/wallpapers/dlinesos/metadata.desktop 2>/dev/null || true
+
+          # Genera il file control
+          cat <<EOF > pkg/DEBIAN/control
+          Package: dlinesos-wallpapers
+          Version: 1.0.${{ github.run_number }}
+          Section: graphics
+          Priority: optional
+          Architecture: all
+          Maintainer: D-Brand Team
+          Description: Sfondi ufficiali per D-LinesOS-XD
+          EOF
+
+          # Compila il pacchetto .deb
+          dpkg-deb --build pkg dlinesos-wallpapers.deb
+
+          # Prepara la struttura del repository APT
+          mkdir -p public/pool/main
+          mv dlinesos-wallpapers.deb public/pool/main/
+
+          cd public
+          dpkg-scanpackages pool/main /dev/null > Packages
+          gzip -k -f Packages
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
