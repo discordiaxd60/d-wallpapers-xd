@@ -6,7 +6,13 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -15,17 +21,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
       - name: Build .deb package and APT Repo
         run: |
-          mkdir -p pkg/DEBIAN
-          mkdir -p pkg/usr/share/wallpapers/dlinesos
+          mkdir -p public/pool/main
+          mkdir -p build_pkg/DEBIAN
+          mkdir -p build_pkg/usr/share/wallpapers/dlinesos
 
-          # Copia i file delle immagini e i metadati
-          cp -r src-wallpapers/* pkg/usr/share/wallpapers/dlinesos/
-          mv pkg/usr/share/wallpapers/dlinesos/metadata.desktop pkg/usr/share/wallpapers/dlinesos/metadata.desktop 2>/dev/null || true
+          if [ -d "src-wallpapers" ]; then
+            cp -r src-wallpapers/* build_pkg/usr/share/wallpapers/dlinesos/ 2>/dev/null || true
+          fi
 
-          # Genera il file control
-          cat <<EOF > pkg/DEBIAN/control
+          cat <<EOF > build_pkg/DEBIAN/control
           Package: dlinesos-wallpapers
           Version: 1.0.${{ github.run_number }}
           Section: graphics
@@ -35,19 +44,25 @@ jobs:
           Description: Sfondi ufficiali per D-LinesOS-XD
           EOF
 
-          # Compila il pacchetto .deb
-          dpkg-deb --build pkg dlinesos-wallpapers.deb
-
-          # Prepara la struttura del repository APT
-          mkdir -p public/pool/main
+          dpkg-deb --build build_pkg dlinesos-wallpapers.deb
           mv dlinesos-wallpapers.deb public/pool/main/
 
           cd public
           dpkg-scanpackages pool/main /dev/null > Packages
           gzip -k -f Packages
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          path: ./public
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
