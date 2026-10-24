@@ -22,49 +22,65 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build tools
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils python3-pil python3-tk
 
-      - name: Build .deb package and APT Repo
+      - name: Validate app and wallpaper metadata
         run: |
-          # 1. Crea la struttura della cartella temporanea per il pacchetto
-          mkdir -p build_pkg/DEBIAN
-          mkdir -p build_pkg/usr/share/wallpapers/dlinesos
+          python3 -m py_compile app/d_gallery_xd.py
+          PYTHONPATH=app python3 -c 'from d_gallery_xd import load_wallpapers; wallpapers = load_wallpapers(); assert wallpapers; print(f"Validated {len(wallpapers)} wallpapers")'
 
-          # 2. Copia i file degli sfondi si la cartella esiste
+      - name: Build packages and APT repository
+        run: |
+          version="1.0.${{ github.run_number }}"
 
-          if [ -d "src-wallpapers" ]; then
-            cp -r src-wallpapers/* build_pkg/usr/share/wallpapers/dlinesos/ 2>/dev/null || true
-          fi
+          mkdir -p build/wallpapers/DEBIAN
+          mkdir -p build/wallpapers/usr/share/wallpapers/dlinesos
+          cp -a src-wallpapers/. build/wallpapers/usr/share/wallpapers/dlinesos/
 
-          # 3. Crea il file control obbligatorio per Debian
-
-          cat <<EOF > build_pkg/DEBIAN/control
+          cat > build/wallpapers/DEBIAN/control <<EOF
           Package: dlinesos-wallpapers
-          Version: 1.0.${{ github.run_number }}
+          Version: ${version}
           Section: graphics
           Priority: optional
           Architecture: all
           Maintainer: D-Brand Team
-          Description: Sfondi ufficiali per D-LinesOS-XD
+          Description: Official D-LinesOS-XD wallpaper collection
           EOF
 
-          # 4. Compila il pacchetto .deb
-          dpkg-deb --build build_pkg dlinesos-wallpapers.deb
+          mkdir -p build/gallery/DEBIAN
+          mkdir -p build/gallery/usr/bin
+          mkdir -p build/gallery/usr/lib/d-gallery-xd
+          mkdir -p build/gallery/usr/share/applications
+          mkdir -p build/gallery/usr/share/icons/hicolor/scalable/apps
+          install -m 0644 app/d_gallery_xd.py build/gallery/usr/lib/d-gallery-xd/d_gallery_xd.py
+          install -m 0644 app/d-gallery-xd.desktop build/gallery/usr/share/applications/
+          install -m 0644 app/d-gallery-xd.svg build/gallery/usr/share/icons/hicolor/scalable/apps/
+          cat > build/gallery/usr/bin/d-gallery-xd <<'EOF'
+          #!/bin/sh
+          exec /usr/bin/python3 /usr/lib/d-gallery-xd/d_gallery_xd.py "$@"
+          EOF
+          chmod 0755 build/gallery/usr/bin/d-gallery-xd
 
-          # 5. Crea la struttura finale del repository APT nella cartella public
+          cat > build/gallery/DEBIAN/control <<EOF
+          Package: d-gallery-xd
+          Version: ${version}
+          Section: graphics
+          Priority: optional
+          Architecture: all
+          Maintainer: D-Brand Team
+          Depends: dlinesos-wallpapers (= ${version}), python3, python3-pil, python3-tk
+          Description: Desktop gallery for D-LinesOS-XD wallpapers
+          EOF
+
+          dpkg-deb --build build/wallpapers dlinesos-wallpapers.deb
+          dpkg-deb --build build/gallery d-gallery-xd.deb
+
           mkdir -p public/pool/main
-
-          mv dlinesos-wallpapers.deb public/pool/main/
-
-          # 6. Genera l'indice dei pacchetti (usando /dev/null come override)
+          mv dlinesos-wallpapers.deb d-gallery-xd.deb public/pool/main/
           cd public
-          dpkg-scanpackages pool/main /dev/null > Packages
+          dpkg-scanpackages --multiversion pool/main /dev/null > Packages
           gzip -k -f Packages
-          cd ..
-
-          # Mostra il contenuto della cartella public per debug nei log
-          ls -la public/
-          ls -la public/pool/main/
+          apt-ftparchive release . > Release
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
