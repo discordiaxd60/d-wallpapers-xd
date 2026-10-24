@@ -54,10 +54,10 @@ jobs:
           mkdir -p build/gallery/usr/bin
           mkdir -p build/gallery/usr/lib/d-gallery-xd
           mkdir -p build/gallery/usr/share/applications
-          mkdir -p build/gallery/usr/share/icons/hicolor/scalable/apps
+          mkdir -p build/gallery/usr/share/icons/hicolor/256x256/apps
           install -m 0644 app/d_gallery_xd.py build/gallery/usr/lib/d-gallery-xd/d_gallery_xd.py
           install -m 0644 app/d-gallery-xd.desktop build/gallery/usr/share/applications/
-          install -m 0644 app/d-gallery-xd.svg build/gallery/usr/share/icons/hicolor/scalable/apps/
+          install -m 0644 app/d-gallery-xd.png build/gallery/usr/share/icons/hicolor/256x256/apps/
           cat > build/gallery/usr/bin/d-gallery-xd <<'EOF'
           #!/bin/sh
           exec /usr/bin/python3 /usr/lib/d-gallery-xd/d_gallery_xd.py "$@"
