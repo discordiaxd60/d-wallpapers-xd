@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -22,12 +25,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build tools
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils python3-pil python3-tk
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils python3-pil python3-pil.imagetk python3-tk
 
       - name: Validate app and wallpaper metadata
         run: |
           python3 -m py_compile app/d_gallery_xd.py
-          PYTHONPATH=app python3 -c 'from d_gallery_xd import load_wallpapers; wallpapers = load_wallpapers(); assert wallpapers; print(f"Validated {len(wallpapers)} wallpapers")'
+          PYTHONPATH=app python3 -c 'from PIL import ImageTk; from d_gallery_xd import load_wallpapers; wallpapers = load_wallpapers(); assert wallpapers; print(f"Validated ImageTk and {len(wallpapers)} wallpapers")'
 
       - name: Build packages and APT repository
         run: |
@@ -51,10 +54,10 @@ jobs:
           mkdir -p build/gallery/usr/bin
           mkdir -p build/gallery/usr/lib/d-gallery-xd
           mkdir -p build/gallery/usr/share/applications
-          mkdir -p build/gallery/usr/share/icons/hicolor/scalable/apps
+          mkdir -p build/gallery/usr/share/icons/hicolor/256x256/apps
           install -m 0644 app/d_gallery_xd.py build/gallery/usr/lib/d-gallery-xd/d_gallery_xd.py
           install -m 0644 app/d-gallery-xd.desktop build/gallery/usr/share/applications/
-          install -m 0644 app/d-gallery-xd.svg build/gallery/usr/share/icons/hicolor/scalable/apps/
+          install -m 0644 app/d-gallery-xd.png build/gallery/usr/share/icons/hicolor/256x256/apps/
           cat > build/gallery/usr/bin/d-gallery-xd <<'EOF'
           #!/bin/sh
           exec /usr/bin/python3 /usr/lib/d-gallery-xd/d_gallery_xd.py "$@"
@@ -68,7 +71,7 @@ jobs:
           Priority: optional
           Architecture: all
           Maintainer: D-Brand Team
-          Depends: dlinesos-wallpapers (= ${version}), python3, python3-pil, python3-tk
+          Depends: dlinesos-wallpapers (= ${version}), python3, python3-pil, python3-pil.imagetk, python3-tk
           Description: Desktop gallery for D-LinesOS-XD wallpapers
           EOF
 
@@ -88,6 +91,7 @@ jobs:
           path: ./public
 
   deploy:
+    if: github.event_name == 'push'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
