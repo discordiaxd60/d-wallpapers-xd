@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build tools
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils python3-pil python3-pil.imagetk python3-tk
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils python3-pil python3-pil.imagetk python3-tk xvfb
 
       - name: Validate app and wallpaper metadata
         run: |
@@ -54,9 +54,13 @@ jobs:
           mkdir -p build/gallery/usr/bin
           mkdir -p build/gallery/usr/lib/d-gallery-xd
           mkdir -p build/gallery/usr/share/applications
+          mkdir -p build/gallery/usr/share/desktop-directories
+          mkdir -p build/gallery/etc/xdg/menus/applications-merged
           mkdir -p build/gallery/usr/share/icons/hicolor/256x256/apps
           install -m 0644 app/d_gallery_xd.py build/gallery/usr/lib/d-gallery-xd/d_gallery_xd.py
           install -m 0644 app/d-gallery-xd.desktop build/gallery/usr/share/applications/
+          install -m 0644 app/d-xd-services.directory build/gallery/usr/share/desktop-directories/
+          install -m 0644 app/d-xd-services.menu build/gallery/etc/xdg/menus/applications-merged/
           install -m 0644 app/d-gallery-xd.png build/gallery/usr/share/icons/hicolor/256x256/apps/
           cat > build/gallery/usr/bin/d-gallery-xd <<'EOF'
           #!/bin/sh
@@ -77,6 +81,9 @@ jobs:
 
           dpkg-deb --build build/wallpapers dlinesos-wallpapers.deb
           dpkg-deb --build build/gallery d-gallery-xd.deb
+
+          sudo apt-get install -y ./dlinesos-wallpapers.deb ./d-gallery-xd.deb
+          xvfb-run -a d-gallery-xd --smoke-test
 
           mkdir -p public/pool/main
           mv dlinesos-wallpapers.deb d-gallery-xd.deb public/pool/main/

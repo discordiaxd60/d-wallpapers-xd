@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Browse the D-LinesOS wallpaper collection."""
 
+import argparse
 import json
 import re
 import shutil
@@ -443,8 +444,27 @@ class Gallery(tk.Tk):
 def main():
     if not sys.platform.startswith("linux"):
         raise SystemExit(f"{APP_NAME} is a Linux desktop application.")
-    Gallery().mainloop()
+    parser = argparse.ArgumentParser(description=APP_NAME)
+    parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    try:
+        app = Gallery()
+    except (OSError, RuntimeError, ValueError, tk.TclError) as error:
+        print(f"{APP_NAME}: {error}", file=sys.stderr)
+        try:
+            messagebox.showerror(APP_NAME, str(error))
+        except tk.TclError:
+            pass
+        return 1
+
+    if args.smoke_test:
+        app.update_idletasks()
+        app.destroy()
+        return 0
+    app.mainloop()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
