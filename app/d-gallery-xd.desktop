@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=D-Gallery-XD
+Comment=Browse and set D-LinesOS wallpapers
+Exec=d-gallery-xd
+Icon=d-gallery-xd
+Terminal=false
+Type=Application
+Categories=Graphics;Photography;
+Keywords=wallpaper;background;gallery;
