@@ -25,8 +25,4 @@ Launch **D-Gallery-XD** from your applications menu. **Home** shows wallpapers b
 
 Wallpaper dates use the first Git commit that added each image. Descriptions are intentionally blank in `src-wallpapers/wallpapers.json` until supplied; the app shows a placeholder for empty descriptions. Add new wallpaper metadata to that file when adding images.
 
-### Replace the app icon
-
-The launcher icon is `app/d-gallery-xd.png`. Replace that file with any PNG image you want, keeping the same filename. A square image around 256 x 256 pixels works best. The next APT package build will include your replacement icon.
-
 The wallpaper collection is distributed here as its official package. Please do not republish the wallpapers elsewhere.
