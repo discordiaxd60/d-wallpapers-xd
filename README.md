@@ -27,8 +27,37 @@ sudo apt upgrade
 
 > **Note:** This APT repository currently uses unsigned packages. Only add it if you trust this project.
 
+## Install on Fedora with DNF
+
+Add the Fedora repository:
+
+```sh
+sudo tee /etc/yum.repos.d/dlinesos-wallpapers.repo >/dev/null <<'EOF'
+[dlinesos-wallpapers]
+name=D-LinesOS-XD Wallpapers
+baseurl=https://discordiaxd60.github.io/d-wallpapers-xd/fedora/
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
+EOF
+```
+
+Install the wallpaper collection:
+
+```sh
+sudo dnf install dlinesos-wallpapers
+```
+
+The wallpapers are installed under `/usr/share/wallpapers/dlinesos`. To receive future collection updates:
+
+```sh
+sudo dnf upgrade dlinesos-wallpapers
+```
+
+> **Note:** The Fedora RPMs and repository metadata are currently unsigned. Only add this repository if you trust this project.
+
 ## Wallpaper collection
 
-New wallpapers are published through the APT repository as the collection grows.
+New wallpapers are published through the APT and Fedora repositories as the collection grows.
 
 Please enjoy these wallpapers for personal use, but do not republish them elsewhere.
