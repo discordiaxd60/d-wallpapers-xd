@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -31,9 +34,7 @@ jobs:
           mkdir -p build_pkg/usr/share/wallpapers/dlinesos
 
           # 2. Copy the wallpaper files
-          if [ -d "src-wallpapers" ]; then
-            cp -r src-wallpapers/* build_pkg/usr/share/wallpapers/dlinesos/ 2>/dev/null || true
-          fi
+          cp -a src-wallpapers/. build_pkg/usr/share/wallpapers/dlinesos/
 
           # 3. Write the required Debian control file
           cat <<EOF > build_pkg/DEBIAN/control
@@ -60,6 +61,10 @@ jobs:
           gzip -k -f Packages
           cd ..
 
+          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
+            | grep '/usr/share/wallpapers/dlinesos/metadata.desktop' >/dev/null
+          test -s public/Packages.gz
+
           ls -la public/
           ls -la public/pool/main/
 
@@ -76,6 +81,9 @@ jobs:
           mkdir -p public/fedora
           find "$HOME/rpmbuild/RPMS" -name '*.rpm' -exec cp {} public/fedora/ \;
           createrepo_c public/fedora
+          rpm -qlp public/fedora/*.rpm \
+            | grep '/usr/share/wallpapers/dlinesos/metadata.desktop' >/dev/null
+          test -s public/fedora/repodata/repomd.xml
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
