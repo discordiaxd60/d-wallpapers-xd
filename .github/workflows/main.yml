@@ -88,6 +88,8 @@ jobs:
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
             | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
+            | grep '/usr/share/wallpapers/dlinesos-kde/.*/images/.*' >/dev/null
+          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
             | grep '/usr/share/gnome-background-properties/dlinesos-wallpapers.xml' >/dev/null
@@ -118,6 +120,8 @@ jobs:
           createrepo_c public/fedora
           rpm -qlp public/fedora/*.rpm \
             | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
+          rpm -qlp public/fedora/*.rpm \
+            | grep '/usr/share/wallpapers/dlinesos-kde/.*/images/.*' >/dev/null
           rpm -qlp public/fedora/*.rpm \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           rpm -qlp public/fedora/*.rpm \

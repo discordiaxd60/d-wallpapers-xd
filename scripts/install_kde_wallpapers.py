@@ -49,7 +49,7 @@ def desktop_metadata_for(entry, identifier):
 def validate_package(wallpaper_dir, package_root, entry, identifier):
     package_dir = package_root / identifier
     image_path = wallpaper_dir / entry["filename"]
-    link_path = package_dir / "contents" / "images" / entry["filename"]
+    link_path = package_dir / "images" / entry["filename"]
     metadata_path = package_dir / "metadata.json"
     desktop_metadata_path = package_dir / "metadata.desktop"
 
@@ -77,7 +77,7 @@ def install_package(wallpaper_dir, package_root, entry, identifier):
         fail(f"Wallpaper image is missing: {image_path}")
 
     package_dir = package_root / identifier
-    image_dir = package_dir / "contents" / "images"
+    image_dir = package_dir / "images"
     image_dir.mkdir(parents=True, exist_ok=True)
 
     link_path = image_dir / entry["filename"]
