@@ -106,7 +106,9 @@ jobs:
           tar -czf "$HOME/rpmbuild/SOURCES/dlinesos-wallpapers-1.0.tar.gz" \
             --transform='s,^,dlinesos-wallpapers-1.0/,' LICENSE src-wallpapers \
             scripts/install_kde_wallpapers.py packaging/desktop-backgrounds
-          rpmbuild -bb \
+          # Ubuntu provides Python 3, but its RPM database cannot satisfy the
+          # Fedora-style BuildRequires entry in the spec.
+          rpmbuild -bb --nodeps \
             --define "_topdir $HOME/rpmbuild" \
             --define "release_number $GITHUB_RUN_NUMBER" \
             packaging/dlinesos-wallpapers.spec
