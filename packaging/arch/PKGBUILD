@@ -1,0 +1,31 @@
+pkgname=dlinesos-wallpapers
+pkgver=1.0
+pkgrel=1
+pkgdesc='Official D-LinesOS-XD wallpaper collection'
+arch=('any')
+url='https://github.com/discordiaxd60/d-wallpapers-xd'
+license=('GPL-3.0-only')
+makedepends=('git' 'python')
+source=("d-wallpapers-xd::git+https://github.com/discordiaxd60/d-wallpapers-xd.git#branch=main")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/d-wallpapers-xd"
+  printf '1.0.r%s.%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  local source_dir="$srcdir/d-wallpapers-xd"
+  install -d "$pkgdir/usr/share/wallpapers/dlinesos"
+  cp -a "$source_dir/src-wallpapers/." "$pkgdir/usr/share/wallpapers/dlinesos/"
+  python "$source_dir/scripts/install_kde_wallpapers.py" \
+    --wallpaper-dir "$pkgdir/usr/share/wallpapers/dlinesos"
+  install -Dm644 "$source_dir/packaging/desktop-backgrounds/dlinesos-wallpapers.xml" \
+    "$pkgdir/usr/share/gnome-background-properties/dlinesos-wallpapers.xml"
+  install -Dm644 "$source_dir/packaging/desktop-backgrounds/dlinesos-wallpapers.xml" \
+    "$pkgdir/usr/share/cinnamon-background-properties/wallpapers-dlinesos.xml"
+  install -Dm644 "$source_dir/packaging/desktop-backgrounds/dlinesos-wallpapers.xml" \
+    "$pkgdir/usr/share/mate-background-properties/dlinesos-wallpapers.xml"
+  install -Dm644 "$source_dir/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
