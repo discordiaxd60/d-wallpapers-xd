@@ -4,12 +4,10 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 import unicodedata
 from pathlib import Path
-
-
-PACKAGE_ROOT_SUFFIX = "-kde"
 
 
 def fail(message):
@@ -49,7 +47,7 @@ def desktop_metadata_for(entry, identifier):
 def validate_package(wallpaper_dir, package_root, entry, identifier):
     package_dir = package_root / identifier
     image_path = wallpaper_dir / entry["filename"]
-    link_path = package_dir / "images" / entry["filename"]
+    link_path = package_dir / "contents" / "images" / entry["filename"]
     metadata_path = package_dir / "metadata.json"
     desktop_metadata_path = package_dir / "metadata.desktop"
 
@@ -77,7 +75,7 @@ def install_package(wallpaper_dir, package_root, entry, identifier):
         fail(f"Wallpaper image is missing: {image_path}")
 
     package_dir = package_root / identifier
-    image_dir = package_dir / "images"
+    image_dir = package_dir / "contents" / "images"
     image_dir.mkdir(parents=True, exist_ok=True)
 
     link_path = image_dir / entry["filename"]
@@ -100,6 +98,38 @@ def install_package(wallpaper_dir, package_root, entry, identifier):
         desktop_metadata_for(entry, identifier),
         encoding="utf-8",
     )
+
+
+def remove_legacy_packages(wallpaper_dir, identifiers):
+    legacy_root = wallpaper_dir.parent / f"{wallpaper_dir.name}-kde"
+    if not legacy_root.is_dir() or legacy_root.is_symlink():
+        return
+
+    for identifier in identifiers:
+        package_dir = legacy_root / identifier
+        if not package_dir.is_dir() or package_dir.is_symlink():
+            continue
+
+        try:
+            metadata = json.loads((package_dir / "metadata.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        if (
+            isinstance(metadata, dict)
+            and metadata.get("KPackageStructure") == "Wallpaper/Images"
+        ):
+            plugin = metadata.get("KPlugin")
+        else:
+            continue
+
+        if (
+            isinstance(plugin, dict) and plugin.get("Id") == identifier
+        ):
+            shutil.rmtree(package_dir)
+
+    if not any(legacy_root.iterdir()):
+        legacy_root.rmdir()
 
 
 def main():
@@ -131,7 +161,7 @@ def main():
     if not isinstance(entries, list):
         fail(f"Wallpaper catalog has no images list: {catalog_path}")
 
-    package_root = wallpaper_dir.parent / f"{wallpaper_dir.name}{PACKAGE_ROOT_SUFFIX}"
+    package_root = wallpaper_dir.parent
     if not args.check:
         package_root.mkdir(parents=True, exist_ok=True)
 
@@ -164,6 +194,9 @@ def main():
             validate_package(wallpaper_dir, package_root, entry, identifier)
         else:
             install_package(wallpaper_dir, package_root, entry, identifier)
+
+    if not args.check:
+        remove_legacy_packages(wallpaper_dir, identifiers)
 
     print(f"{'Validated' if args.check else 'Created'} {len(entries)} KDE wallpaper packages.")
 

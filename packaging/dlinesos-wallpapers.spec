@@ -32,7 +32,7 @@ install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
 %files
 %license LICENSE
 %{_datadir}/wallpapers/dlinesos/
-%{_datadir}/wallpapers/dlinesos-kde/
+%{_datadir}/wallpapers/dlinesos-*/
 %{_datadir}/gnome-background-properties/dlinesos-wallpapers.xml
 %{_datadir}/cinnamon-background-properties/wallpapers-dlinesos.xml
 %{_datadir}/mate-background-properties/dlinesos-wallpapers.xml
