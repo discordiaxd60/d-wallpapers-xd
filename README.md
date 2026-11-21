@@ -98,9 +98,11 @@ To install just for your user, pass a destination under your home directory inst
 sh scripts/install-wallpapers.sh "$HOME/.local/share/wallpapers/dlinesos"
 ```
 
+The generic installer requires Python 3 to generate KDE Plasma's per-wallpaper packages.
+
 ## Desktop environment integration
 
-The APT, Fedora (including openSUSE), Arch, and default system-wide manual installations register the collection in the background pickers for **GNOME**, **Cinnamon**, and **MATE**. KDE Plasma also receives its existing wallpaper metadata. In GNOME, open **Settings → Background**; in Cinnamon, **System Settings → Background**; in MATE, **Control Center → Appearance → Background**.
+The APT, Fedora (including openSUSE), Arch, and default system-wide manual installations register the collection in the background pickers for **GNOME**, **Cinnamon**, and **MATE**. KDE Plasma gets a separate wallpaper package for each image, so its picker can show each title and credited author. In GNOME, open **Settings → Background**; in Cinnamon, **System Settings → Background**; in MATE, **Control Center → Appearance → Background**.
 
 XFCE, LXQt, and other desktops without a shared wallpaper-catalog format can still use the images: choose `/usr/share/wallpapers/dlinesos` in the desktop's wallpaper folder picker, or browse to an image. User-local and custom-destination installs should be selected manually.
 

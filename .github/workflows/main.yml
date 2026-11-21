@@ -29,8 +29,14 @@ jobs:
 
       - name: Test generic Linux installer
         run: |
+          mkdir -p "$RUNNER_TEMP/wallpaper-install-test"
+          printf '[Desktop Entry]\nName=D-LinesOS Wallpapers\nX-KDE-PluginInfo-Name=dlinesos\nX-KDE-PluginInfo-Author=D-Brand Team\n' \
+            > "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
           sh scripts/install-wallpapers.sh "$RUNNER_TEMP/wallpaper-install-test"
+          test ! -e "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
           diff -r src-wallpapers "$RUNNER_TEMP/wallpaper-install-test"
+          python3 scripts/install_kde_wallpapers.py \
+            --wallpaper-dir "$RUNNER_TEMP/wallpaper-install-test" --check
 
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev rpm createrepo-c
@@ -43,6 +49,10 @@ jobs:
 
           # 2. Copy the wallpaper files
           cp -a src-wallpapers/. build_pkg/usr/share/wallpapers/dlinesos/
+          python3 scripts/install_kde_wallpapers.py \
+            --wallpaper-dir build_pkg/usr/share/wallpapers/dlinesos
+          python3 scripts/install_kde_wallpapers.py \
+            --wallpaper-dir build_pkg/usr/share/wallpapers/dlinesos --check
           install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
             build_pkg/usr/share/gnome-background-properties/dlinesos-wallpapers.xml
           install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
@@ -76,7 +86,7 @@ jobs:
           cd ..
 
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/wallpapers/dlinesos/metadata.desktop' >/dev/null
+            | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
@@ -94,7 +104,8 @@ jobs:
         run: |
           mkdir -p "$HOME/rpmbuild"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           tar -czf "$HOME/rpmbuild/SOURCES/dlinesos-wallpapers-1.0.tar.gz" \
-            --transform='s,^,dlinesos-wallpapers-1.0/,' LICENSE src-wallpapers packaging/desktop-backgrounds
+            --transform='s,^,dlinesos-wallpapers-1.0/,' LICENSE src-wallpapers \
+            scripts/install_kde_wallpapers.py packaging/desktop-backgrounds
           rpmbuild -bb \
             --define "_topdir $HOME/rpmbuild" \
             --define "release_number $GITHUB_RUN_NUMBER" \
@@ -104,7 +115,7 @@ jobs:
           find "$HOME/rpmbuild/RPMS" -name '*.rpm' -exec cp {} public/fedora/ \;
           createrepo_c public/fedora
           rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/wallpapers/dlinesos/metadata.desktop' >/dev/null
+            | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
           rpm -qlp public/fedora/*.rpm \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           rpm -qlp public/fedora/*.rpm \
