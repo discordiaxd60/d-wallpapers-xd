@@ -18,7 +18,7 @@ sudo apt update
 sudo apt install dlinesos-wallpapers
 ```
 
-The wallpapers are installed under `/usr/share/wallpapers/dlinesos`. To receive future collection updates:
+The images are installed under `/usr/share/wallpapers/dlinesos`, with individual KDE wallpaper packages directly under `/usr/share/wallpapers`. To receive future collection updates:
 
 ```sh
 sudo apt update

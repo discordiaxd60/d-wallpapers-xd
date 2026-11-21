@@ -32,9 +32,30 @@ jobs:
           mkdir -p "$RUNNER_TEMP/wallpaper-install-test"
           printf '[Desktop Entry]\nName=D-LinesOS Wallpapers\nX-KDE-PluginInfo-Name=dlinesos\nX-KDE-PluginInfo-Author=D-Brand Team\n' \
             > "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "scripts")
+          from install_kde_wallpapers import package_id
+
+          catalog = json.loads(Path("src-wallpapers/catalog.json").read_text(encoding="utf-8"))
+          identifier = package_id(catalog["images"][0]["filename"])
+          legacy = Path(os.environ["RUNNER_TEMP"]) / "wallpaper-install-test-kde" / identifier
+          legacy.mkdir(parents=True)
+          (legacy / "metadata.json").write_text(json.dumps({
+              "KPackageStructure": "Wallpaper/Images",
+              "KPlugin": {"Id": identifier},
+          }), encoding="utf-8")
+          PY
           sh scripts/install-wallpapers.sh "$RUNNER_TEMP/wallpaper-install-test"
           test ! -e "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
+          test ! -e "$RUNNER_TEMP/wallpaper-install-test-kde"
           diff -r src-wallpapers "$RUNNER_TEMP/wallpaper-install-test"
+          find "$RUNNER_TEMP" -mindepth 3 -maxdepth 3 -type d \
+            -path "$RUNNER_TEMP/dlinesos-*/contents/images" -print -quit | grep -q .
           python3 scripts/install_kde_wallpapers.py \
             --wallpaper-dir "$RUNNER_TEMP/wallpaper-install-test" --check
 
@@ -86,9 +107,9 @@ jobs:
           cd ..
 
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
+            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/metadata.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/wallpapers/dlinesos-kde/.*/images/.*' >/dev/null
+            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/contents/images/.*' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
@@ -119,9 +140,9 @@ jobs:
           find "$HOME/rpmbuild/RPMS" -name '*.rpm' -exec cp {} public/fedora/ \;
           createrepo_c public/fedora
           rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/wallpapers/dlinesos-kde/.*/metadata.json' >/dev/null
+            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/metadata.json' >/dev/null
           rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/wallpapers/dlinesos-kde/.*/images/.*' >/dev/null
+            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/contents/images/.*' >/dev/null
           rpm -qlp public/fedora/*.rpm \
             | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
           rpm -qlp public/fedora/*.rpm \
