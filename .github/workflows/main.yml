@@ -24,40 +24,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate wallpaper catalog
-        run: python3 scripts/validate_wallpaper_catalog.py
-
       - name: Test generic Linux installer
         run: |
           mkdir -p "$RUNNER_TEMP/wallpaper-install-test"
           printf '[Desktop Entry]\nName=D-LinesOS Wallpapers\nX-KDE-PluginInfo-Name=dlinesos\nX-KDE-PluginInfo-Author=D-Brand Team\n' \
             > "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
-          python3 - <<'PY'
-          import json
-          import os
-          import sys
-          from pathlib import Path
-
-          sys.path.insert(0, "scripts")
-          from install_kde_wallpapers import package_id
-
-          catalog = json.loads(Path("src-wallpapers/catalog.json").read_text(encoding="utf-8"))
-          identifier = package_id(catalog["images"][0]["filename"])
-          legacy = Path(os.environ["RUNNER_TEMP"]) / "wallpaper-install-test-kde" / identifier
-          legacy.mkdir(parents=True)
-          (legacy / "metadata.json").write_text(json.dumps({
-              "KPackageStructure": "Wallpaper/Images",
-              "KPlugin": {"Id": identifier},
-          }), encoding="utf-8")
-          PY
+          printf '{\n  "schema_version": 1,\n  "images": [\n' \
+            > "$RUNNER_TEMP/wallpaper-install-test/catalog.json"
+          for package_root in \
+            "$RUNNER_TEMP" \
+            "$RUNNER_TEMP/wallpaper-install-test-kde"
+          do
+            package_dir="$package_root/dlinesos-old-test"
+            mkdir -p "$package_dir"
+            printf '{\n  "KPackageStructure": "Wallpaper/Images",\n  "KPlugin": {\n    "Id": "dlinesos-old-test",\n' \
+              > "$package_dir/metadata.json"
+          done
           sh scripts/install-wallpapers.sh "$RUNNER_TEMP/wallpaper-install-test"
           test ! -e "$RUNNER_TEMP/wallpaper-install-test/metadata.desktop"
           test ! -e "$RUNNER_TEMP/wallpaper-install-test-kde"
+          test ! -e "$RUNNER_TEMP/dlinesos-old-test"
+          test ! -e "$RUNNER_TEMP/wallpaper-install-test/catalog.json"
           diff -r src-wallpapers "$RUNNER_TEMP/wallpaper-install-test"
-          find "$RUNNER_TEMP" -mindepth 3 -maxdepth 3 -type d \
-            -path "$RUNNER_TEMP/dlinesos-*/contents/images" -print -quit | grep -q .
-          python3 scripts/install_kde_wallpapers.py \
-            --wallpaper-dir "$RUNNER_TEMP/wallpaper-install-test" --check
+          if find "$RUNNER_TEMP/wallpaper-install-test" -type f \
+            \( -name '*.json' -o -name '*.desktop' -o -name '*.xml' \) \
+            -print -quit | grep -q .; then
+            echo "Installer left metadata in the wallpaper destination."
+            exit 1
+          fi
 
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev rpm createrepo-c
@@ -70,16 +64,6 @@ jobs:
 
           # 2. Copy the wallpaper files
           cp -a src-wallpapers/. build_pkg/usr/share/wallpapers/dlinesos/
-          python3 scripts/install_kde_wallpapers.py \
-            --wallpaper-dir build_pkg/usr/share/wallpapers/dlinesos
-          python3 scripts/install_kde_wallpapers.py \
-            --wallpaper-dir build_pkg/usr/share/wallpapers/dlinesos --check
-          install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
-            build_pkg/usr/share/gnome-background-properties/dlinesos-wallpapers.xml
-          install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
-            build_pkg/usr/share/cinnamon-background-properties/wallpapers-dlinesos.xml
-          install -D -m 644 packaging/desktop-backgrounds/dlinesos-wallpapers.xml \
-            build_pkg/usr/share/mate-background-properties/dlinesos-wallpapers.xml
 
           # 3. Write the required Debian control file
           cat <<EOF > build_pkg/DEBIAN/control
@@ -106,18 +90,11 @@ jobs:
           gzip -k -f Packages
           cd ..
 
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/metadata.json' >/dev/null
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/contents/images/.*' >/dev/null
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/gnome-background-properties/dlinesos-wallpapers.xml' >/dev/null
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/cinnamon-background-properties/wallpapers-dlinesos.xml' >/dev/null
-          dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
-            | grep '/usr/share/mate-background-properties/dlinesos-wallpapers.xml' >/dev/null
+          if dpkg-deb --contents public/pool/main/dlinesos-wallpapers.deb \
+            | grep -E '\.(json|desktop|xml)$'; then
+            echo "Debian package unexpectedly contains wallpaper metadata."
+            exit 1
+          fi
           test -s public/Packages.gz
 
           ls -la public/
@@ -127,11 +104,8 @@ jobs:
         run: |
           mkdir -p "$HOME/rpmbuild"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           tar -czf "$HOME/rpmbuild/SOURCES/dlinesos-wallpapers-1.0.tar.gz" \
-            --transform='s,^,dlinesos-wallpapers-1.0/,' LICENSE src-wallpapers \
-            scripts/install_kde_wallpapers.py packaging/desktop-backgrounds
-          # Ubuntu provides Python 3, but its RPM database cannot satisfy the
-          # Fedora-style BuildRequires entry in the spec.
-          rpmbuild -bb --nodeps \
+            --transform='s,^,dlinesos-wallpapers-1.0/,' LICENSE src-wallpapers
+          rpmbuild -bb \
             --define "_topdir $HOME/rpmbuild" \
             --define "release_number $GITHUB_RUN_NUMBER" \
             packaging/dlinesos-wallpapers.spec
@@ -139,18 +113,10 @@ jobs:
           mkdir -p public/fedora
           find "$HOME/rpmbuild/RPMS" -name '*.rpm' -exec cp {} public/fedora/ \;
           createrepo_c public/fedora
-          rpm -qlp public/fedora/*.rpm \
-            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/metadata.json' >/dev/null
-          rpm -qlp public/fedora/*.rpm \
-            | grep -E '/usr/share/wallpapers/dlinesos-[^/]+/contents/images/.*' >/dev/null
-          rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/wallpapers/dlinesos/catalog.json' >/dev/null
-          rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/gnome-background-properties/dlinesos-wallpapers.xml' >/dev/null
-          rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/cinnamon-background-properties/wallpapers-dlinesos.xml' >/dev/null
-          rpm -qlp public/fedora/*.rpm \
-            | grep '/usr/share/mate-background-properties/dlinesos-wallpapers.xml' >/dev/null
+          if rpm -qlp public/fedora/*.rpm | grep -E '\.(json|desktop|xml)$'; then
+            echo "RPM package unexpectedly contains wallpaper metadata."
+            exit 1
+          fi
           test -s public/fedora/repodata/repomd.xml
 
       - name: Upload artifact for GitHub Pages
