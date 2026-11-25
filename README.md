@@ -18,7 +18,7 @@ sudo apt update
 sudo apt install dlinesos-wallpapers
 ```
 
-The images are installed under `/usr/share/wallpapers/dlinesos`, with individual KDE wallpaper packages directly under `/usr/share/wallpapers`. To receive future collection updates:
+The images are installed under `/usr/share/wallpapers/dlinesos`. To receive future collection updates:
 
 ```sh
 sudo apt update
@@ -98,26 +98,10 @@ To install just for your user, pass a destination under your home directory inst
 sh scripts/install-wallpapers.sh "$HOME/.local/share/wallpapers/dlinesos"
 ```
 
-The generic installer requires Python 3 to generate KDE Plasma's per-wallpaper packages.
-
-## Desktop environment integration
-
-The APT, Fedora (including openSUSE), Arch, and default system-wide manual installations register the collection in the background pickers for **GNOME**, **Cinnamon**, and **MATE**. KDE Plasma gets a separate wallpaper package for each image, so its picker can show each title and credited author. In GNOME, open **Settings → Background**; in Cinnamon, **System Settings → Background**; in MATE, **Control Center → Appearance → Background**.
-
-XFCE, LXQt, and other desktops without a shared wallpaper-catalog format can still use the images: choose `/usr/share/wallpapers/dlinesos` in the desktop's wallpaper folder picker, or browse to an image. User-local and custom-destination installs should be selected manually.
+The images are plain files and can be selected from your desktop environment's wallpaper settings. User-local and custom-destination installs should be selected manually.
 
 ## Wallpaper collection
 
 New wallpapers are published through the APT and Fedora repositories as the collection grows.
 
 Please enjoy these wallpapers for personal use, but do not republish them elsewhere.
-
-## Wallpaper metadata
-
-[`src-wallpapers/catalog.json`](src-wallpapers/catalog.json) contains searchable metadata for every image, including its display title, author, description, tags, dimensions, aspect ratio, orientation, format, and MIME type. Authors are included where credited; unknown authors and image-specific licenses are left `null` rather than guessed. Display titles are cleaned up independently of the original filenames. The catalog is also installed at `/usr/share/wallpapers/dlinesos/catalog.json`.
-
-For example, use `jq` to find wallpapers by a tag:
-
-```sh
-jq '.images[] | select(.tags | index("gradient"))' src-wallpapers/catalog.json
-```
